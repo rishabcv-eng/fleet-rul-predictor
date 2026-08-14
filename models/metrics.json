@@ -1,0 +1,68 @@
+{
+  "cross_validation": {
+    "rmse": 18.366391266279898,
+    "mae": 12.2645729986469,
+    "r2": 0.8064112128109158,
+    "phm_score": 234620.40710609587,
+    "n": 20148
+  },
+  "holdout": {
+    "rmse": 20.544967322385794,
+    "mae": 15.126633388255138,
+    "r2": 0.6310173016254395,
+    "phm_score": 510.8489763749118,
+    "n": 40
+  },
+  "n_features": 76,
+  "n_train_units": 100,
+  "top_features": [
+    {
+      "feature": "cycle",
+      "importance": 0.3707275431574713
+    },
+    {
+      "feature": "bypass_duct_pressure_roll_mean",
+      "importance": 0.11788246887130542
+    },
+    {
+      "feature": "lpc_outlet_temp_roll_mean",
+      "importance": 0.039774445374880694
+    },
+    {
+      "feature": "lpt_coolant_bleed_roll_mean",
+      "importance": 0.02929628297213664
+    },
+    {
+      "feature": "hpt_coolant_bleed_roll_mean",
+      "importance": 0.01864920003550367
+    },
+    {
+      "feature": "physical_fan_speed_roll_mean",
+      "importance": 0.015892708560777995
+    },
+    {
+      "feature": "bleed_enthalpy_roll_mean",
+      "importance": 0.015514022091099311
+    },
+    {
+      "feature": "hpc_outlet_temp_roll_mean",
+      "importance": 0.011712512005076206
+    },
+    {
+      "feature": "bypass_ratio_roll_mean",
+      "importance": 0.009644246189059421
+    },
+    {
+      "feature": "static_pressure_roll_mean",
+      "importance": 0.009111249224576142
+    },
+    {
+      "feature": "lpt_outlet_temp_roll_mean",
+      "importance": 0.008056601115587961
+    },
+    {
+      "feature": "fuel_flow_ratio_roll_mean",
+      "importance": 0.007971019424447298
+    }
+  ]
+}

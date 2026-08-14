@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Predictive Maintenance — Fleet Readiness</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11, 11, 11, 0.10);
+    --series-1: #2a78d6;
+    --good: #0ca30c;
+    --warning: #fab219;
+    --critical: #d03b3b;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255, 255, 255, 0.10);
+    --series-1: #3987e5;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 20px 28px;
+    background: var(--surface-1);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { margin: 0; font-size: 17px; font-weight: 600; }
+  header .sub { color: var(--text-secondary); font-size: 13px; }
+  header .spacer { flex: 1; }
+
+  button.ghost {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    padding: 5px 11px;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button.ghost:hover { background: var(--page); }
+
+  main { padding: 24px 28px 48px; max-width: 1400px; margin: 0 auto; }
+
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .tile {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .tile .label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .tile .value { font-size: 28px; font-weight: 600; margin-top: 4px; }
+  .tile .note { font-size: 12px; color: var(--muted); }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+
+  .layout { display: grid; grid-template-columns: minmax(420px, 1fr) 1.25fr; gap: 20px; }
+  @media (max-width: 1080px) { .layout { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 20px;
+  }
+  .card h2 {
+    margin: 0 0 2px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .card .caption {
+    margin: 0 0 14px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left;
+    font-weight: 500;
+    color: var(--muted);
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0 8px 8px;
+    border-bottom: 1px solid var(--grid);
+  }
+  td { padding: 9px 8px; border-bottom: 1px solid var(--grid); }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: var(--page); }
+  tbody tr[aria-selected="true"] { background: var(--page); box-shadow: inset 2px 0 0 var(--series-1); }
+  .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .asset-id { font-weight: 600; }
+  .asset-sub { color: var(--muted); font-size: 12px; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .scroll { max-height: 620px; overflow-y: auto; }
+
+  svg { display: block; width: 100%; overflow: visible; }
+  .axis-label { font-size: 11px; fill: var(--muted); }
+  .grid-line { stroke: var(--grid); stroke-width: 1; }
+  .axis-line { stroke: var(--baseline); stroke-width: 1; }
+
+  .spark-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 16px 20px;
+  }
+  .spark h3 {
+    margin: 0 0 1px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  .spark .range { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .empty { color: var(--muted); font-size: 13px; padding: 28px 0; text-align: center; }
+
+  .tooltip {
+    position: fixed;
+    pointer-events: none;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+    opacity: 0;
+    transition: opacity 0.1s;
+    z-index: 20;
+    font-variant-numeric: tabular-nums;
+  }
+  .tooltip strong { font-weight: 600; }
+
+  .banner {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--warning);
+    border-radius: 8px;
+    padding: 11px 14px;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Fleet Readiness — Predictive Maintenance</h1>
+  <span class="sub" id="model-line">loading…</span>
+  <span class="spacer"></span>
+  <button class="ghost" id="theme-toggle">Dark mode</button>
+</header>
+
+<main>
+  <div class="banner">
+    Predictions come from a gradient-boosting model trained on run-to-failure sensor
+    histories. Remaining useful life (RUL) is measured in operating cycles and capped
+    at 125 — above that the sensors cannot distinguish "healthy" from "very healthy".
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="layout">
+    <div>
+      <div class="card">
+        <h2>Maintenance priority</h2>
+        <p class="caption">Every asset, most urgent first. Select a row for detail.</p>
+        <div class="scroll"><table>
+          <thead><tr>
+            <th>Asset</th>
+            <th class="num">Cycles</th>
+            <th class="num">RUL</th>
+            <th>Status</th>
+          </tr></thead>
+          <tbody id="fleet-body"></tbody>
+        </table></div>
+      </div>
+
+      <div class="card">
+        <h2>What drives the prediction</h2>
+        <p class="caption">Permutation importance — how much accuracy is lost when each feature is shuffled, relative to the strongest feature.</p>
+        <div id="importance"></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h2 id="detail-title">Asset detail</h2>
+        <p class="caption" id="detail-caption">Select an asset from the priority list.</p>
+        <div id="detail-chart"></div>
+      </div>
+
+      <div class="card">
+        <h2>Sensor traces</h2>
+        <p class="caption">Raw readings with a 20-cycle rolling mean. Drift from the flat early section is the wear signal.</p>
+        <div class="spark-grid" id="sparks"><p class="empty">No asset selected.</p></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+const STATUS = {
+  critical: { color: "var(--critical)", label: "Critical", icon: "◆" },
+  warning:  { color: "var(--warning)",  label: "Warning",  icon: "▲" },
+  healthy:  { color: "var(--good)",     label: "Healthy",  icon: "●" },
+};
+
+const tooltip = document.getElementById("tooltip");
+let fleet = null;
+
+const svgEl = (tag, attrs = {}) => {
+  const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+  return node;
+};
+
+function showTip(event, html) {
+  tooltip.innerHTML = html;
+  tooltip.style.opacity = "1";
+  const box = tooltip.getBoundingClientRect();
+  let x = event.clientX + 14;
+  if (x + box.width > window.innerWidth - 8) x = event.clientX - box.width - 14;
+  tooltip.style.left = x + "px";
+  tooltip.style.top = Math.max(8, event.clientY - box.height - 10) + "px";
+}
+const hideTip = () => { tooltip.style.opacity = "0"; };
+
+/* ---------------------------------------------------------------- summary */
+
+function renderTiles(summary, metrics) {
+  const rmse = metrics?.holdout?.rmse ?? metrics?.cross_validation?.rmse;
+  const tiles = [
+    { label: "Assets monitored", value: summary.total, note: "in service" },
+    { label: "Critical", value: summary.critical, note: "RUL ≤ 25 cycles", status: "critical" },
+    { label: "Warning", value: summary.warning, note: "RUL 26–60 cycles", status: "warning" },
+    { label: "Healthy", value: summary.healthy, note: "RUL > 60 cycles", status: "healthy" },
+    { label: "Mean health score", value: summary.mean_health, note: "0–100 across fleet" },
+    { label: "Model error", value: rmse ? rmse.toFixed(1) : "—", note: "RMSE, cycles" },
+  ];
+
+  document.getElementById("tiles").innerHTML = tiles.map(tile => {
+    const badge = tile.status
+      ? `<span class="dot" style="background:${STATUS[tile.status].color}"></span>`
+      : "";
+    return `<div class="tile">
+      <div class="label">${badge}${tile.label}</div>
+      <div class="value">${tile.value}</div>
+      <div class="note">${tile.note}</div>
+    </div>`;
+  }).join("");
+}
+
+/* ------------------------------------------------------------ fleet table */
+
+function renderFleet(assets) {
+  const body = document.getElementById("fleet-body");
+  body.innerHTML = assets.map(asset => {
+    const status = STATUS[asset.status];
+    return `<tr data-unit="${asset.unit}" tabindex="0">
+      <td>
+        <div class="asset-id">${asset.asset_id}</div>
+        <div class="asset-sub">${asset.asset_type} · ${asset.component}</div>
+      </td>
+      <td class="num">${asset.cycles_in_service}</td>
+      <td class="num"><strong>${asset.predicted_rul}</strong></td>
+      <td><span class="badge" style="color:${status.color}">
+        ${status.icon} ${status.label}
+      </span></td>
+    </tr>`;
+  }).join("");
+
+  body.querySelectorAll("tr").forEach(row => {
+    const select = () => {
+      body.querySelectorAll("tr").forEach(r => r.removeAttribute("aria-selected"));
+      row.setAttribute("aria-selected", "true");
+      loadAsset(row.dataset.unit);
+    };
+    row.addEventListener("click", select);
+    row.addEventListener("keydown", event => {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); select(); }
+    });
+  });
+}
+
+/* -------------------------------------------------------- RUL trajectory */
+
+function renderTrajectory(asset) {
+  const container = document.getElementById("detail-chart");
+  container.innerHTML = "";
+
+  const width = container.clientWidth || 620;
+  const height = 260;
+  const pad = { top: 28, right: 16, bottom: 34, left: 46 };
+  const plotW = width - pad.left - pad.right;
+  const plotH = height - pad.top - pad.bottom;
+
+  const xs = asset.cycles;
+  const ys = asset.rul_trajectory;
+  const xMin = xs[0], xMax = xs[xs.length - 1];
+  const yMax = Math.max(125, ...ys);
+
+  const sx = value => pad.left + ((value - xMin) / Math.max(1, xMax - xMin)) * plotW;
+  const sy = value => pad.top + plotH - (value / yMax) * plotH;
+
+  const svg = svgEl("svg", { viewBox: `0 0 ${width} ${height}`, height });
+
+  // Threshold bands, drawn behind the line so the reader sees which zone the
+  // trajectory has entered without reading the axis.
+  [[0, 25, "var(--critical)"], [25, 60, "var(--warning)"]].forEach(([lo, hi, color]) => {
+    svg.appendChild(svgEl("rect", {
+      x: pad.left, y: sy(hi), width: plotW, height: sy(lo) - sy(hi),
+      fill: color, opacity: 0.07,
+    }));
+  });
+
+  for (let value = 0; value <= yMax; value += 25) {
+    svg.appendChild(svgEl("line", {
+      x1: pad.left, x2: pad.left + plotW, y1: sy(value), y2: sy(value), class: "grid-line",
+    }));
+    const label = svgEl("text", { x: pad.left - 8, y: sy(value) + 4, class: "axis-label", "text-anchor": "end" });
+    label.textContent = value;
+    svg.appendChild(label);
+  }
+
+  svg.appendChild(svgEl("line", {
+    x1: pad.left, x2: pad.left + plotW, y1: sy(0), y2: sy(0), class: "axis-line",
+  }));
+
+  [xMin, Math.round((xMin + xMax) / 2), xMax].forEach(value => {
+    const label = svgEl("text", { x: sx(value), y: height - 12, class: "axis-label", "text-anchor": "middle" });
+    label.textContent = value;
+    svg.appendChild(label);
+  });
+
+  const yTitle = svgEl("text", { x: pad.left - 8, y: pad.top - 13, class: "axis-label", "text-anchor": "end" });
+  yTitle.textContent = "RUL";
+  svg.appendChild(yTitle);
+  const xTitle = svgEl("text", { x: pad.left + plotW / 2, y: height + 2, class: "axis-label", "text-anchor": "middle" });
+  xTitle.textContent = "operating cycle";
+  svg.appendChild(xTitle);
+
+  svg.appendChild(svgEl("path", {
+    d: xs.map((x, i) => `${i ? "L" : "M"}${sx(x).toFixed(1)},${sy(ys[i]).toFixed(1)}`).join(" "),
+    fill: "none", stroke: "var(--series-1)", "stroke-width": 2,
+    "stroke-linejoin": "round", "stroke-linecap": "round",
+  }));
+
+  // End marker with a surface ring, so it stays visible over the bands.
+  const endX = sx(xMax), endY = sy(ys[ys.length - 1]);
+  svg.appendChild(svgEl("circle", { cx: endX, cy: endY, r: 5.5, fill: "var(--surface-1)" }));
+  svg.appendChild(svgEl("circle", { cx: endX, cy: endY, r: 4, fill: "var(--series-1)" }));
+
+  const crosshair = svgEl("line", {
+    y1: pad.top, y2: pad.top + plotH, class: "axis-line", opacity: 0, "stroke-dasharray": "3 3",
+  });
+  svg.appendChild(crosshair);
+
+  const overlay = svgEl("rect", {
+    x: pad.left, y: pad.top, width: plotW, height: plotH, fill: "transparent",
+  });
+  overlay.addEventListener("mousemove", event => {
+    const rect = svg.getBoundingClientRect();
+    const ratio = (event.clientX - rect.left) / rect.width * width;
+    const cycle = xMin + ((ratio - pad.left) / plotW) * (xMax - xMin);
+    let index = 0, best = Infinity;
+    xs.forEach((x, i) => { const d = Math.abs(x - cycle); if (d < best) { best = d; index = i; } });
+    crosshair.setAttribute("x1", sx(xs[index]));
+    crosshair.setAttribute("x2", sx(xs[index]));
+    crosshair.setAttribute("opacity", 1);
+    showTip(event, `Cycle <strong>${xs[index]}</strong><br>Predicted RUL <strong>${ys[index]}</strong> cycles`);
+  });
+  overlay.addEventListener("mouseleave", () => { crosshair.setAttribute("opacity", 0); hideTip(); });
+  svg.appendChild(overlay);
+
+  container.appendChild(svg);
+}
+
+/* ------------------------------------------------------- sensor sparklines */
+
+function renderSparks(asset) {
+  const container = document.getElementById("sparks");
+  container.innerHTML = "";
+
+  Object.entries(asset.sensors).forEach(([name, series]) => {
+    const width = 240, height = 74, pad = 5;
+    const values = series.raw.concat(series.smoothed);
+    const lo = Math.min(...values), hi = Math.max(...values);
+    const span = (hi - lo) || 1;
+
+    const sx = i => pad + (i / Math.max(1, series.raw.length - 1)) * (width - 2 * pad);
+    const sy = v => pad + (1 - (v - lo) / span) * (height - 2 * pad);
+    const path = points => points.map((v, i) => `${i ? "L" : "M"}${sx(i).toFixed(1)},${sy(v).toFixed(1)}`).join(" ");
+
+    const svg = svgEl("svg", { viewBox: `0 0 ${width} ${height}`, height, preserveAspectRatio: "none" });
+    svg.appendChild(svgEl("path", {
+      d: path(series.raw), fill: "none",
+      stroke: "var(--muted)", "stroke-width": 1, opacity: 0.45,
+    }));
+    svg.appendChild(svgEl("path", {
+      d: path(series.smoothed), fill: "none",
+      stroke: "var(--series-1)", "stroke-width": 2, "stroke-linejoin": "round",
+    }));
+
+    const block = document.createElement("div");
+    block.className = "spark";
+    block.innerHTML = `<h3>${name.replace(/_/g, " ")}</h3>
+      <div class="range">${lo.toFixed(1)} → ${hi.toFixed(1)}</div>`;
+    block.appendChild(svg);
+
+    block.addEventListener("mousemove", event => showTip(
+      event,
+      `<strong>${name.replace(/_/g, " ")}</strong><br>` +
+      `latest ${series.raw[series.raw.length - 1].toFixed(2)}<br>` +
+      `<span style="color:var(--muted)">grey: raw · blue: 20-cycle mean</span>`
+    ));
+    block.addEventListener("mouseleave", hideTip);
+    container.appendChild(block);
+  });
+}
+
+/* ---------------------------------------------------- feature importance */
+
+function renderImportance(features) {
+  const container = document.getElementById("importance");
+  container.innerHTML = "";
+  if (!features.length) { container.innerHTML = '<p class="empty">No data.</p>'; return; }
+
+  const top = features.slice(0, 10);
+  const max = Math.max(...top.map(f => f.importance));
+  const rowH = 25, labelW = 168, width = container.clientWidth || 480;
+  const barW = Math.max(80, width - labelW - 56);
+  const height = top.length * rowH + 6;
+
+  const svg = svgEl("svg", { viewBox: `0 0 ${width} ${height}`, height });
+
+  top.forEach((feature, i) => {
+    const y = i * rowH + 4;
+    const length = Math.max(2, (feature.importance / max) * barW);
+
+    const label = svgEl("text", { x: labelW - 10, y: y + 13, class: "axis-label", "text-anchor": "end" });
+    label.textContent = feature.feature.replace(/_/g, " ");
+    svg.appendChild(label);
+
+    svg.appendChild(svgEl("rect", {
+      x: labelW, y, width: length, height: rowH - 9,
+      rx: 4, fill: "var(--series-1)",
+    }));
+
+    // Shown relative to the strongest feature -- raw permutation scores are
+    // in units of squared error and mean little on their own.
+    const value = svgEl("text", { x: labelW + length + 7, y: y + 13, class: "axis-label" });
+    value.textContent = Math.round((feature.importance / max) * 100) + "%";
+    svg.appendChild(value);
+  });
+
+  container.appendChild(svg);
+}
+
+/* ------------------------------------------------------------------ wiring */
+
+async function loadAsset(unit) {
+  const asset = await fetch(`/api/asset/${unit}`).then(r => r.json());
+  const status = STATUS[asset.status];
+  document.getElementById("detail-title").textContent =
+    `${asset.asset_id} — ${asset.asset_type}`;
+  document.getElementById("detail-caption").innerHTML =
+    `${asset.component} · ${asset.base} · ${asset.cycles_in_service} cycles in service · ` +
+    `<span style="color:${status.color}">${status.icon} ${status.label}</span>, ` +
+    `<strong>${asset.predicted_rul}</strong> cycles of life remaining`;
+  renderTrajectory(asset);
+  renderSparks(asset);
+}
+
+async function init() {
+  const [fleetData, metrics, importance] = await Promise.all([
+    fetch("/api/fleet").then(r => r.json()),
+    fetch("/api/metrics").then(r => r.ok ? r.json() : null),
+    fetch("/api/importance").then(r => r.ok ? r.json() : { features: [] }),
+  ]);
+  fleet = fleetData;
+
+  renderTiles(fleetData.summary, metrics);
+  renderFleet(fleetData.assets);
+  renderImportance(importance.features);
+
+  document.getElementById("model-line").textContent = metrics
+    ? `${metrics.n_features} features · ${metrics.n_train_units} training units · ` +
+      `held-out RMSE ${metrics.holdout ? metrics.holdout.rmse.toFixed(1) : "n/a"} cycles`
+    : "model metrics unavailable";
+
+  // Open the most urgent asset by default -- that is what an operator wants.
+  const first = document.querySelector("#fleet-body tr");
+  if (first) first.click();
+}
+
+document.getElementById("theme-toggle").addEventListener("click", () => {
+  const root = document.documentElement;
+  const dark = root.getAttribute("data-theme") === "dark";
+  root.setAttribute("data-theme", dark ? "light" : "dark");
+  document.getElementById("theme-toggle").textContent = dark ? "Dark mode" : "Light mode";
+  const selected = document.querySelector('#fleet-body tr[aria-selected="true"]');
+  if (selected) selected.click();
+});
+
+let resizeTimer;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const selected = document.querySelector('#fleet-body tr[aria-selected="true"]');
+    if (selected) selected.click();
+  }, 200);
+});
+
+init().catch(error => {
+  document.querySelector("main").innerHTML =
+    `<div class="card"><h2>Could not load data</h2>
+     <p class="caption">${error}. Have you run <code>python -m backend.train</code>?</p></div>`;
+});
+</script>
+</body>
+</html>
