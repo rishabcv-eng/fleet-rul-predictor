@@ -92,8 +92,8 @@ SVG charts — no build step, no npm, no CDN. Clone and run.
 Requires Python 3.10 or newer.
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/predictive-maintenance.git
-cd predictive-maintenance
+git clone https://github.com/rishabcv-eng/fleet-rul-predictor.git
+cd fleet-rul-predictor
 
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate

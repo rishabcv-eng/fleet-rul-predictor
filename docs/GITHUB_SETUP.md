@@ -63,7 +63,7 @@ git commit -m "Predictive maintenance system for equipment RUL prediction"
 
 Go to https://github.com/new and:
 
-- **Repository name:** `predictive-maintenance`
+- **Repository name:** `fleet-rul-predictor`
 - **Description:** `Predicting remaining useful life of equipment from sensor telemetry — ML pipeline + dashboard`
 - **Public**
 - **Do not** tick "Add a README", "Add .gitignore", or "Choose a license" — you
@@ -74,10 +74,11 @@ Click **Create repository**.
 
 ## 5. Push
 
-GitHub shows you these commands after creating the repo. Replace `YOUR-USERNAME`:
+GitHub shows you these commands after creating the repo. For this project the
+remote is already set to `rishabcv-eng/fleet-rul-predictor`:
 
 ```bash
-git remote add origin https://github.com/YOUR-USERNAME/predictive-maintenance.git
+git remote add origin https://github.com/rishabcv-eng/fleet-rul-predictor.git
 git branch -M main
 git push -u origin main
 ```
@@ -105,16 +106,16 @@ Refresh your repo on GitHub. Two small things that make a real difference:
 you see a broken image icon, the file didn't get committed — run
 `git add docs/ && git commit -m "Add dashboard screenshot" && git push`.
 
-## 7. Update the README
+## 7. Fix your commit name
 
-One thing still needs editing: the clone URL in the Quick Start section says
-`YOUR-USERNAME`. Change it to your actual username.
+The first commits on this repo were authored as `unknown` because `user.name` was
+never set — only `user.email` was. Set it once so future commits carry your name:
 
 ```bash
-git add README.md
-git commit -m "Fix clone URL in README"
-git push
+git config --global user.name "Rishab"
 ```
+
+Past commits keep the old name; that's fine, and not worth rewriting history for.
 
 ---
 
